@@ -10,14 +10,23 @@
 #include <stdlib.h>
 #include <sys/shm.h>
 #include <unistd.h>
+#include <pthread.h>
 
+//client functions
 int format_input(char *user_input, long *num_p);
+
+
+
+
+//server functions
+long bit_rotate_right(long num);
 
 #define EMPTY 0
 #define QUIT -1
 #define NEW_DATA 1
 #define BUFF_SIZE 64
-#define NUM_REQUESTS 10
+#define NUM_REQUESTS 10 // number of inputted numbers handled simultaneously
+#define NUM_THREADS 32 // num threads per inputted number
 
 
 // shared memory struct between client and server.

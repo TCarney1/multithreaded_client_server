@@ -36,9 +36,27 @@ int main() {
         }
         // number entered.
         if(shm_ptr->client_flag == NEW_DATA) {
-            printf("Received: %ld\n", shm_ptr->number);
+            pthread_t tid;
+            long num = shm_ptr->number;
+            // num threads is just for 1 request.
+            // so overall threads is NUM_THREADS * requests.
+            // This just starts 32 threads, 1 for each bit rotated num.
+            long temp = num;
+            for(int i = 0; i < NUM_THREADS; i++){
+                printf("Num Rotation: %d Value: %ld\n", i, temp);
+                temp = bit_rotate_right(temp);
+            }
         }
         // tell client they can replace the number.
         shm_ptr->client_flag = EMPTY;
     }
+}
+
+
+long bit_rotate_right(long num){
+    int dropped = num & 1; // bitwise AND
+    int bits = sizeof(int) * 8 - 1;
+    num = (num >> 1) & (~(1 << bits)); // ~ = bitwise compliment
+    num = num | (dropped << bits);
+    return num;
 }
