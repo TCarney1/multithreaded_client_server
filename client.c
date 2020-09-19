@@ -6,7 +6,8 @@
 //*************************************************************************
 // this program queries the user for a number (32-bit integer)
 // The program then finds all the factors of that number and 31 other
-// numbers derived from bit rotating right.
+// numbers derived from bit rotating right. Each new number made by the
+// bit rotate will have its factors solved by its own thread.
 //*************************************************************************
 
 int main() {
@@ -14,10 +15,32 @@ int main() {
     char *user_input = (char *)malloc(sizeof(char) * BUFF_SIZE);
     printf("Either enter a value and number of threads (\"12345678 4\"), or type quit.\n");
 
+    /// stuff for shared memory ///
     key_t shm_key; // shared memory key
     int shm_id; // shared memory id
     struct Memory *shm_ptr; // pointer to shared memory struct.
+    shm_key = ftok(".", 'x');
+    shm_id = shmget(shm_key, sizeof(struct Memory), IPC_CREAT | 0666);
+    if(shm_id < 0){
+        printf("Error with shared memory ID.\n");
+        exit(EXIT_FAILURE);
+    }
 
+    printf("--- shared memory allocated ---\n");
+
+    shm_ptr = (struct Memory *) shmat(shm_id, NULL, 0);
+    if((int) shm_ptr == -1){
+        printf("Error with shmat.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("--- memory has been attached ---\n");
+
+    // init shared memory flags
+    shm_ptr->client_flag = EMPTY;
+    for(int i = 0; i < NUM_REQUESTS; i++){
+        shm_ptr->server_flag[i] = EMPTY;
+    }
 
     while(1){
         memset(user_input, '\0', sizeof(char) * BUFF_SIZE); // clear user_input
@@ -25,11 +48,29 @@ int main() {
         fgets(user_input, BUFF_SIZE, stdin); // put user input into user_input
         if(strcmp(user_input, "quit\n") == 0){ // check for quit condition
             free(user_input);
+            shm_ptr->client_flag = QUIT;
+            shmdt((void *) shm_ptr);
+            printf("--- memory detached ---\n");
+            shmctl(shm_id, IPC_RMID, NULL);
+            printf("--- memory removed ---\n");
+            printf("--- quiting... ---\n");
             exit(EXIT_SUCCESS);
         }
 
         if(format_input(user_input, &num) == 0){
-            printf("Value: %ld\n", num);
+            printf("--- requesting from server ---\n");
+            if(shm_ptr->client_flag != EMPTY){
+                printf("--- waiting for server ---\n");
+            }
+            // what for server to take data.
+            while(shm_ptr->client_flag != EMPTY)
+                sleep(1);
+            shm_ptr->number = num;
+            shm_ptr->client_flag = NEW_DATA;
+            printf("--- request sent ---\n");
+            while(shm_ptr->client_flag != EMPTY)
+                sleep(1);
+            printf("--- server received request ---\n");
         } else {
             printf("Incorrect arguments entered.\n");
         }

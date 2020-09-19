@@ -9,19 +9,23 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/shm.h>
+#include <unistd.h>
 
 int format_input(char *user_input, long *num_p);
 
-#define NOT_READY -1
-#define FULL 0
-#define EMPTY 1
+#define EMPTY 0
+#define QUIT -1
+#define NEW_DATA 1
 #define BUFF_SIZE 64
+#define NUM_REQUESTS 10
 
 
 // shared memory struct between client and server.
 struct Memory{
-    int status;
-    int data[4];
+    int client_flag; // flag for new number
+    long number; // new number
+    int server_flag[NUM_REQUESTS]; // flags for response slots.
+    long slot[NUM_REQUESTS]; // slots for responses.
 };
 
 #endif //ASSESSMENT2_HEADER_H
