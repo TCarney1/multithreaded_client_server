@@ -23,23 +23,22 @@ int main() {
 
     printf("--- server memory attached ---\n");
     while(1) {
-        sleep(1);
-        //printf("Outside loop.\n");
         // what for client to send data.
         while (shm_ptr->client_flag == EMPTY){
-            //printf("--- waiting... ---\n");
-            sleep(1);
+            ;
         }
-        //printf("looping.\n");
+        // quit
         if (shm_ptr->client_flag == QUIT) {
             shmdt((void *) shm_ptr);
             printf("--- memory detached ---\n");
             printf("--- quiting... ---\n");
             exit(EXIT_SUCCESS);
         }
+        // number entered.
         if(shm_ptr->client_flag == NEW_DATA) {
             printf("Received: %ld\n", shm_ptr->number);
-            shm_ptr->client_flag = EMPTY;
         }
+        // tell client they can replace the number.
+        shm_ptr->client_flag = EMPTY;
     }
 }
