@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <sys/shm.h>
 
-int format_input(char *user_input, long *num_p, long *thread_p);
+int format_input(char *user_input, long *num_p);
 
 #define NOT_READY -1
 #define FULL 0
