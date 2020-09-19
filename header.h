@@ -20,6 +20,7 @@ int format_input(char *user_input, long *num_p);
 
 //server functions
 long bit_rotate_right(long num);
+void *find_factors(void *arg);
 
 #define EMPTY 0
 #define QUIT -1
