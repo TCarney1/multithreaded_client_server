@@ -49,10 +49,26 @@ int main() {
         // number entered.
         if(shm_ptr->client_flag == NEW_DATA) {
             // local data so we can keep track of current vars.
+
+            shm_ptr->current_slot = slot_request(shm_ptr->server_flag); // get index of next avail slot
+            shm_ptr->slot[shm_ptr->current_slot] = shm_ptr->number; // put number in slot
+            // if we arent full, make threads for client request.
+            if(shm_ptr->current_slot >= 0) {
+                pthread_t tid;
+                // create 32 threads to solve simultaneously
+                // for each request
+                pthread_create(&tid, NULL, solve, (void *) shm_ptr);
+
+                shm_ptr->number = shm_ptr->current_slot; // tell client index of next avail slot. (-1 if full)
+                // tell client they can replace the number.
+                shm_ptr->client_flag = EMPTY;
+
+            /*
+            // local data so we can keep track of current vars.
             struct Memory m = *shm_ptr; // copy number locally
 
-            m.current_slot = slot_request(shm_ptr->server_flag); // get index of next aval slot
-            shm_ptr->number = m.current_slot; // tell client index of next aval slot. (-1 if full)
+            m.current_slot = slot_request(shm_ptr->server_flag); // get index of next avail slot
+            shm_ptr->number = m.current_slot; // tell client index of next avail slot. (-1 if full)
             // tell client they can replace the number.
             shm_ptr->client_flag = EMPTY;
 
@@ -62,6 +78,7 @@ int main() {
                 // create 32 threads to solve simultaneously
                 // for each request
                 pthread_create(&tid, NULL, solve, (void *) &m);
+                */
             } else {
                 printf("--- cannot add request: server full ---\n");
             }
@@ -87,7 +104,7 @@ int slot_request(int server_flag[]){
 // each thread finds all the factors for a different number.
 void *solve(void* arg){
     struct Memory *m = (struct Memory *) arg;
-    long loc = m->number;
+    long loc = m->slot[m->current_slot];
 
     printf("Started: %ld\n", loc);
     pthread_t tid[NUM_THREADS];
@@ -102,6 +119,7 @@ void *solve(void* arg){
     for(int i = 0; i < NUM_THREADS; i++){
         pthread_join(tid[i], NULL);
     }
+
     printf("Finished: %ld\n", loc);
 }
 
@@ -112,7 +130,7 @@ void *solve(void* arg){
 void *find_factors(void *arg){
     struct Memory *m = (struct Memory*) arg;
     int rotations = m->index;
-    long num = m->number;
+    long num = m->slot[m->current_slot];
     long original = num;
     // bit rotates num by its index.
     num = bit_rotate_right(num, rotations);
