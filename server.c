@@ -42,6 +42,7 @@ int main() {
 
             pthread_t tid;
             // create 32 threads to solve simultaneously
+            shm_ptr->current_processes++;
             pthread_create(&tid, NULL, solve, (void *) &num);
         }
     }
@@ -53,31 +54,32 @@ int main() {
 void *solve(void* arg){
     long *num = (long *) arg;
     long loc = *num;
-    printf("Started: %ld\n", loc);
+    //printf("Started: %ld\n", loc);
     pthread_t tid[NUM_THREADS];
     // num threads is just for 1 request.
     // so overall threads is NUM_THREADS * requests.
     // This just starts 32 threads, 1 for each bit rotated num.
     for(int i = 0; i < NUM_THREADS; i++){
-        struct Data D = {*num, i};
+        struct Data D = {loc, i};
         pthread_create(&tid[i], NULL, find_factors, (void *) &D);
-        delay(10);
+        delay(25);
     }
     for(int i = 0; i < NUM_THREADS; i++){
         pthread_join(tid[i], NULL);
     }
-    printf("Finished: %ld\n", loc);
+    //printf("Finished: %ld\n", loc);
 }
 
 
-void bit_rotate_right(long *num, unsigned int rotations) {
+long bit_rotate_right(long num, unsigned int rotations) {
     int dropped;
     int bits = sizeof(int) * 8 - 1;
     while (rotations--) {
-        dropped = *num & 1; // bitwise AND
-        *num = (*num >> 1) & (~(1 << bits)); // ~ = bitwise compliment
-        *num = *num | (dropped << bits);
+        dropped = num & 1; // bitwise AND
+        num = (num >> 1) & (~(1 << bits)); // ~ = bitwise compliment
+        num = num | (dropped << bits); // bitwise OR
     }
+    return num;
 }
 
 
@@ -85,14 +87,15 @@ void *find_factors(void *arg){
     struct Data *d = (struct Data*) arg;
     int rotations = d->index;
     long num = d->num;
+    long original = num;
 
     // bit rotates num by its index.
-    bit_rotate_right(&num, rotations);
+    num = bit_rotate_right(num, rotations);
 
-    printf("Num: %ld\n", num);
+    //printf("Num: %ld\n", num);
     for(long i = 1; i <= num; i++){
         if(num % i == 0){
-            //printf("Num: %ld -- Factor: %ld\n", num, i);
+            //printf("OG: %ld Num: %ld -- Factor: %ld\n", original, num, i);
         }
     }
     return (void*) 0;
@@ -109,3 +112,4 @@ void delay(int milli){
     while( (now-then) < pause )
         now = clock();
 }
+

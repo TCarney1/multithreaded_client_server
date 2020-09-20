@@ -19,7 +19,7 @@ int format_input(char *user_input, long *num_p);
 
 
 //server functions
-void bit_rotate_right(long *num, unsigned int rotations);
+long bit_rotate_right(long num, unsigned int rotations);
 void *find_factors(void *arg);
 void delay(int milli);
 void *solve(void* num);
@@ -38,12 +38,14 @@ struct Memory{
     long number; // new number
     int server_flag[NUM_REQUESTS]; // flags for response slots.
     long slot[NUM_REQUESTS]; // slots for responses.
+    int current_processes;
 };
 
 
 struct Data{
     long num;
     int index;
+    long slot[NUM_REQUESTS];
 };
 
 #endif //ASSESSMENT2_HEADER_H
