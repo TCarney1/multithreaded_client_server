@@ -47,7 +47,7 @@ int main() {
             for(int i = 0; i < NUM_THREADS; i++){
                 struct Data D = {num, i};
                 pthread_create(&tid[i], NULL, find_factors, (void *) &D);
-                sleep(1);
+                delay(10);
             }
             for(int i = 0; i < NUM_THREADS; i++){
                 pthread_join(tid[i], NULL);
@@ -82,6 +82,16 @@ void *find_factors(void *arg){
             printf("Num: %ld -- Factor: %ld\n", num, i);
         }
     }
-
     return (void*) 0;
+}
+
+void delay(int milli){
+    long pause;
+    clock_t now,then;
+
+    pause = milli*(CLOCKS_PER_SEC/1000);
+    then = clock();
+    now = then;
+    while( (now-then) < pause )
+        now = clock();
 }
