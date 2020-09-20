@@ -40,20 +40,33 @@ int main() {
             // tell client they can replace the number.
             shm_ptr->client_flag = EMPTY;
 
-            pthread_t tid[NUM_THREADS];
-            // num threads is just for 1 request.
-            // so overall threads is NUM_THREADS * requests.
-            // This just starts 32 threads, 1 for each bit rotated num.
-            for(int i = 0; i < NUM_THREADS; i++){
-                struct Data D = {num, i};
-                pthread_create(&tid[i], NULL, find_factors, (void *) &D);
-                delay(10);
-            }
-            for(int i = 0; i < NUM_THREADS; i++){
-                pthread_join(tid[i], NULL);
-            }
+            pthread_t tid;
+            // create 32 threads to solve simultaneously
+            pthread_create(&tid, NULL, solve, (void *) &num);
         }
     }
+}
+
+
+// creates 32 threads.
+// each thread finds all the factors for a different number.
+void *solve(void* arg){
+    long *num = (long *) arg;
+    long loc = *num;
+    printf("Started: %ld\n", loc);
+    pthread_t tid[NUM_THREADS];
+    // num threads is just for 1 request.
+    // so overall threads is NUM_THREADS * requests.
+    // This just starts 32 threads, 1 for each bit rotated num.
+    for(int i = 0; i < NUM_THREADS; i++){
+        struct Data D = {*num, i};
+        pthread_create(&tid[i], NULL, find_factors, (void *) &D);
+        delay(10);
+    }
+    for(int i = 0; i < NUM_THREADS; i++){
+        pthread_join(tid[i], NULL);
+    }
+    printf("Finished: %ld\n", loc);
 }
 
 
@@ -79,11 +92,12 @@ void *find_factors(void *arg){
     printf("Num: %ld\n", num);
     for(long i = 1; i <= num; i++){
         if(num % i == 0){
-            printf("Num: %ld -- Factor: %ld\n", num, i);
+            //printf("Num: %ld -- Factor: %ld\n", num, i);
         }
     }
     return (void*) 0;
 }
+
 
 void delay(int milli){
     long pause;

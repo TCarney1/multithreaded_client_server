@@ -22,6 +22,7 @@ int format_input(char *user_input, long *num_p);
 void bit_rotate_right(long *num, unsigned int rotations);
 void *find_factors(void *arg);
 void delay(int milli);
+void *solve(void* num);
 
 #define EMPTY 0
 #define QUIT -1
