@@ -4,11 +4,14 @@
 // NOTE: make sure you compile with -lpthread to allow threads to be used.
 
 //*************************************************************************
-// this program queries the user for a number (32-bit integer)
-// The program then finds all the factors of that number and 31 other
-// numbers derived from bit rotating right. Each new number made by the
-// bit rotate will have its factors solved by its own thread.
+// this program queries the user for a number (32-bit integer).
+// The program then makes 31 individual numbers, each by bit rotating
+// right. The program then finds all the factors of all 32 numbers.
+// This is done by given each number its own thread, and solving
+// simultaneously. Up to 10 requests can be made at the same time.
+// Resulting in up to 320 threads simultaneously solving factors.
 //*************************************************************************
+
 
 int main() {
     long num;
@@ -41,6 +44,8 @@ int main() {
     for(int i = 0; i < NUM_REQUESTS; i++){
         shm_ptr->server_flag[i] = EMPTY;
     }
+    // so client can keep track of where requests have been slotted.
+    long local_slots[NUM_REQUESTS];
 
     while(1){
         memset(user_input, '\0', sizeof(char) * BUFF_SIZE); // clear user_input
@@ -59,21 +64,34 @@ int main() {
 
         if(format_input(user_input, &num) == 0){
             printf("--- requesting from server ---\n");
+
+            // ensure server has taken data.
+            // (shouldn't really even enter this loop.)
             if(shm_ptr->client_flag != EMPTY){
                 printf("--- waiting for server ---\n");
             }
-            // what for server to take data.
             while(shm_ptr->client_flag != EMPTY)
                 sleep(1);
+
+            // upload num to shared memory
+            // and change flag to tell server
             shm_ptr->number = num;
             shm_ptr->client_flag = NEW_DATA;
             printf("--- request sent ---\n");
+
+            // wait for server to acknowledge
             while(shm_ptr->client_flag != EMPTY)
                 sleep(1);
-            if(shm_ptr->number < 0){
+
+            // server reply's with index of slot the slot
+            // that num has been put in.
+            // (server places it in shm_ptr->number).
+            if(shm_ptr->number >= 0){
+                local_slots[shm_ptr->number] = num;
+                printf("--- request successful: Num: %ld Slot: %ld ---\n", num, shm_ptr->number);
+            } else {
                 printf("--- request denied: server full ---\n");
             }
-            printf("--- request successful: Num: %ld Slot: %ld ---\n", num, shm_ptr->number);
         } else {
             printf("Incorrect arguments entered.\n");
         }

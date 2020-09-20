@@ -1,5 +1,17 @@
 #include "header.h"
 
+// NOTE: make sure you compile with -lpthread to allow threads to be used.
+
+//*************************************************************************
+// this program queries the user for a number (32-bit integer).
+// The program then makes 31 individual numbers, each by bit rotating
+// right. The program then finds all the factors of all 32 numbers.
+// This is done by given each number its own thread, and solving
+// simultaneously. Up to 10 requests can be made at the same time.
+// Resulting in up to 320 threads simultaneously solving factors.
+//*************************************************************************
+
+
 int main() {
     key_t shm_key;
     int shm_id;
@@ -70,6 +82,7 @@ int slot_request(int server_flag[]){
 }
 
 
+// main driving function for solution.
 // creates 32 threads.
 // each thread finds all the factors for a different number.
 void *solve(void* arg){
@@ -93,6 +106,9 @@ void *solve(void* arg){
 }
 
 
+// each thread executes this function.
+// finds all the factors of its number and then sends/waits
+// to send results back to client in the right slot.
 void *find_factors(void *arg){
     struct Memory *m = (struct Memory*) arg;
     int rotations = m->index;
@@ -100,7 +116,7 @@ void *find_factors(void *arg){
     long original = num;
     // bit rotates num by its index.
     num = bit_rotate_right(num, rotations);
-
+    printf("My slot: %d\n", m->current_slot);
     //printf("Num: %ld\n", num);
     for(long i = 1; i <= num; i++){
         if(num % i == 0){
@@ -111,6 +127,7 @@ void *find_factors(void *arg){
 }
 
 
+// bit rotates right an integer of data type long n number of rotations.
 long bit_rotate_right(long num, unsigned int rotations) {
     int dropped;
     int bits = sizeof(int) * 8 - 1;
@@ -123,6 +140,7 @@ long bit_rotate_right(long num, unsigned int rotations) {
 }
 
 
+// delays for n milliseconds.
 void delay(int milli){
     long pause;
     clock_t now,then;
