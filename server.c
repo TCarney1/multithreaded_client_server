@@ -40,10 +40,15 @@ int main() {
             // tell client they can replace the number.
             shm_ptr->client_flag = EMPTY;
 
+            struct Memory m;
+            m.number = shm_ptr->number;
+
+
             pthread_t tid;
             // create 32 threads to solve simultaneously
-            shm_ptr->current_processes++;
-            pthread_create(&tid, NULL, solve, (void *) &num);
+            /// TODO WE PROBABLY WANT TO FILL FLAGS HERE SO THEY DONT
+            /// TODO OVERWRITE EACH OTHER
+            pthread_create(&tid, NULL, solve, (void *) &m);
         }
     }
 }
@@ -52,22 +57,41 @@ int main() {
 // creates 32 threads.
 // each thread finds all the factors for a different number.
 void *solve(void* arg){
-    long *num = (long *) arg;
-    long loc = *num;
-    //printf("Started: %ld\n", loc);
+    struct Memory *m = (struct Memory *) arg;
+    long loc = m->number;
+
+    printf("Started: %ld\n", loc);
     pthread_t tid[NUM_THREADS];
     // num threads is just for 1 request.
     // so overall threads is NUM_THREADS * requests.
     // This just starts 32 threads, 1 for each bit rotated num.
     for(int i = 0; i < NUM_THREADS; i++){
-        struct Data D = {loc, i};
-        pthread_create(&tid[i], NULL, find_factors, (void *) &D);
+        m->index = i;
+        pthread_create(&tid[i], NULL, find_factors, (void *) m);
         delay(25);
     }
     for(int i = 0; i < NUM_THREADS; i++){
         pthread_join(tid[i], NULL);
     }
-    //printf("Finished: %ld\n", loc);
+    printf("Finished: %ld\n", loc);
+}
+
+
+void *find_factors(void *arg){
+    struct Memory *m = (struct Memory*) arg;
+    int rotations = m->index;
+    long num = m->number;
+    long original = num;
+    // bit rotates num by its index.
+    num = bit_rotate_right(num, rotations);
+
+    //printf("Num: %ld\n", num);
+    for(long i = 1; i <= num; i++){
+        if(num % i == 0){
+            printf("OG: %ld Num: %ld -- Factor: %ld\n", original, num, i);
+        }
+    }
+    return (void*) 0;
 }
 
 
@@ -80,25 +104,6 @@ long bit_rotate_right(long num, unsigned int rotations) {
         num = num | (dropped << bits); // bitwise OR
     }
     return num;
-}
-
-
-void *find_factors(void *arg){
-    struct Data *d = (struct Data*) arg;
-    int rotations = d->index;
-    long num = d->num;
-    long original = num;
-
-    // bit rotates num by its index.
-    num = bit_rotate_right(num, rotations);
-
-    //printf("Num: %ld\n", num);
-    for(long i = 1; i <= num; i++){
-        if(num % i == 0){
-            //printf("OG: %ld Num: %ld -- Factor: %ld\n", original, num, i);
-        }
-    }
-    return (void*) 0;
 }
 
 

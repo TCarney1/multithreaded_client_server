@@ -34,18 +34,15 @@ void *solve(void* num);
 
 // shared memory struct between client and server.
 struct Memory{
-    int client_flag; // flag for new number
     long number; // new number
-    int server_flag[NUM_REQUESTS]; // flags for response slots.
     long slot[NUM_REQUESTS]; // slots for responses.
-    int current_processes;
-};
-
-
-struct Data{
-    long num;
+    int client_flag; // flag for new number
+    int server_flag[NUM_REQUESTS]; // flags for response slots.
     int index;
-    long slot[NUM_REQUESTS];
 };
+
+
+
+
 
 #endif //ASSESSMENT2_HEADER_H
