@@ -36,21 +36,37 @@ int main() {
         }
         // number entered.
         if(shm_ptr->client_flag == NEW_DATA) {
-            long num = shm_ptr->number;
+            // local data so we can keep track of current vars.
+            struct Memory m = *shm_ptr; // copy number locally
+
+            m.current_slot = slot_request(shm_ptr->server_flag); // get index of next aval slot
+            shm_ptr->number = m.current_slot; // tell client index of next aval slot. (-1 if full)
             // tell client they can replace the number.
             shm_ptr->client_flag = EMPTY;
 
-            struct Memory m;
-            m.number = shm_ptr->number;
-
-
-            pthread_t tid;
-            // create 32 threads to solve simultaneously
-            /// TODO WE PROBABLY WANT TO FILL FLAGS HERE SO THEY DONT
-            /// TODO OVERWRITE EACH OTHER
-            pthread_create(&tid, NULL, solve, (void *) &m);
+            // if we arent full, make threads for client request.
+            if(m.current_slot >= 0){
+                pthread_t tid;
+                // create 32 threads to solve simultaneously
+                // for each request
+                pthread_create(&tid, NULL, solve, (void *) &m);
+            } else {
+                printf("--- cannot add request: server full ---\n");
+            }
         }
     }
+}
+
+
+// returns index of next available slot, or -1 for full.
+int slot_request(int server_flag[]){
+    for(int i = 0; i < NUM_REQUESTS; i++){
+        if(server_flag[i] == EMPTY){
+            server_flag[i] = NEW_DATA;
+            return i;
+        }
+    }
+    return -1;
 }
 
 

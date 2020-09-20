@@ -23,6 +23,7 @@ long bit_rotate_right(long num, unsigned int rotations);
 void *find_factors(void *arg);
 void delay(int milli);
 void *solve(void* num);
+int slot_request(int server_flag[]);
 
 #define EMPTY 0
 #define QUIT -1
@@ -38,7 +39,7 @@ struct Memory{
     long slot[NUM_REQUESTS]; // slots for responses.
     int client_flag; // flag for new number
     int server_flag[NUM_REQUESTS]; // flags for response slots.
-    int index;
+    int index, current_slot;
 };
 
 

@@ -70,7 +70,10 @@ int main() {
             printf("--- request sent ---\n");
             while(shm_ptr->client_flag != EMPTY)
                 sleep(1);
-            printf("--- server received request ---\n");
+            if(shm_ptr->number < 0){
+                printf("--- request denied: server full ---\n");
+            }
+            printf("--- request successful: Num: %ld Slot: %ld ---\n", num, shm_ptr->number);
         } else {
             printf("Incorrect arguments entered.\n");
         }
