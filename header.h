@@ -14,6 +14,7 @@
 
 //client functions
 int format_input(char *user_input, long *num_p);
+void *listen(void *arg);
 
 
 
@@ -26,7 +27,7 @@ void *solve(void* num);
 int slot_request(int server_flag[]);
 
 #define EMPTY 0
-#define QUIT -1
+#define CLOSE -1
 #define NEW_DATA 1
 #define BUFF_SIZE 64
 #define NUM_REQUESTS 10 // number of inputted numbers handled simultaneously

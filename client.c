@@ -12,6 +12,8 @@
 // Resulting in up to 320 threads simultaneously solving factors.
 //*************************************************************************
 
+// so client can keep track of where requests have been slotted.
+long local_slots[NUM_REQUESTS];
 
 int main() {
     long num;
@@ -42,18 +44,16 @@ int main() {
     // init shared memory flags
     shm_ptr->client_flag = EMPTY;
     for(int i = 0; i < NUM_REQUESTS; i++){
-        shm_ptr->server_flag[i] = EMPTY;
+        shm_ptr->server_flag[i] = CLOSE;
     }
-    // so client can keep track of where requests have been slotted.
-    long local_slots[NUM_REQUESTS];
-
+    pthread_t tid[NUM_REQUESTS];
     while(1){
         memset(user_input, '\0', sizeof(char) * BUFF_SIZE); // clear user_input
         printf("> "); // user prompt
         fgets(user_input, BUFF_SIZE, stdin); // put user input into user_input
         if(strcmp(user_input, "quit\n") == 0){ // check for quit condition
             free(user_input);
-            shm_ptr->client_flag = QUIT;
+            shm_ptr->client_flag = CLOSE;
             shmdt((void *) shm_ptr);
             printf("--- memory detached ---\n");
             shmctl(shm_id, IPC_RMID, NULL);
@@ -86,8 +86,11 @@ int main() {
             // server reply's with index of slot the slot
             // that num has been put in.
             // (server places it in shm_ptr->number).
-            if(shm_ptr->number >= 0){
+            if(shm_ptr->number >= 0){ // -1 is returned if full)
                 local_slots[shm_ptr->number] = num;
+                // create a thread for listening for factors.
+                printf("slot: %ld\n", shm_ptr->number);
+                pthread_create(&tid[shm_ptr->number], NULL, listen, (void *) shm_ptr);
                 printf("--- request successful: Num: %ld Slot: %ld ---\n", num, shm_ptr->number);
             } else {
                 printf("--- request denied: server full ---\n");
@@ -96,6 +99,29 @@ int main() {
             printf("Incorrect arguments entered.\n");
         }
     }
+}
+
+
+void *listen(void *arg){
+    struct timespec start, end;
+    long time_taken;
+
+    clock_gettime( CLOCK_MONOTONIC, &start);
+
+    struct Memory* m = (struct Memory*) arg;
+    long slot_num = m->number;
+    while(m->server_flag[slot_num] != CLOSE){
+        while(m->server_flag[slot_num] == EMPTY)
+            ;
+        if(m->server_flag[slot_num] == NEW_DATA){
+            //printf("Request: %ld -- Factor: %ld\n", local_slots[slot_num], m->slot[slot_num]);
+            m->server_flag[slot_num] = EMPTY;
+        }
+    }
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    time_taken = (end.tv_sec - start.tv_sec);
+    time_taken += (end.tv_nsec - start.tv_nsec) / 1000000000;
+    printf("Time elapsed for number \"%ld\": %ld seconds.\n",local_slots[slot_num], time_taken);
 }
 
 
