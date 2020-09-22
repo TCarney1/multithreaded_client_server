@@ -125,7 +125,7 @@ void *listen(void *arg){
                 head->factor = m->slot[slot_num];
             }
             count++;
-            bar(local_slots[slot_num], length, count, 1000);
+            bar(local_slots[slot_num], length, count, 300);
             //printf("Request: %ld -- Factor: %ld\n", local_slots[slot_num], m->slot[slot_num]);
             m->server_flag[slot_num] = EMPTY;
         }
