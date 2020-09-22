@@ -11,6 +11,7 @@
 #include <sys/shm.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <limits.h>
 
 
 #define EMPTY 0
@@ -19,6 +20,7 @@
 #define BUFF_SIZE 64
 #define NUM_REQUESTS 10 // number of inputted numbers handled simultaneously
 #define NUM_THREADS 32 // num threads per inputted number
+#define SIZE 10 // loading bar size
 
 
 // shared memory struct between client and server.
@@ -42,6 +44,10 @@ void *listen(void *arg);
 void print_list(struct Node* n);
 void push_front(struct Node ** head, long factor);
 void delete(struct Node *head);
+void bar(long num, int length, long completed, long total);
+void delete_bar(int length);
+void display_bar(long num, long full);
+int get_length(long num);
 
 
 

@@ -108,9 +108,10 @@ void *listen(void *arg){
     long time_taken;
 
     clock_gettime( CLOCK_MONOTONIC, &start);
-
+    int count = 0;
     struct Memory* m = (struct Memory*) arg;
     long slot_num = m->number;
+    int length = get_length(local_slots[slot_num]);
     while(m->server_flag[slot_num] != CLOSE){
         // wait for server to give us a factor.
         while(m->server_flag[slot_num] == EMPTY)
@@ -123,6 +124,8 @@ void *listen(void *arg){
             } else {
                 head->factor = m->slot[slot_num];
             }
+            count++;
+            bar(local_slots[slot_num], length, count, 1000);
             //printf("Request: %ld -- Factor: %ld\n", local_slots[slot_num], m->slot[slot_num]);
             m->server_flag[slot_num] = EMPTY;
         }
@@ -186,3 +189,49 @@ void delete(struct Node *head){
         free(temp);
     }
 }
+
+
+void display_bar(long num, long percentage_complete){
+    long i;
+    printf("%ld : |", num);
+    for(i = 0; i < percentage_complete; i++)
+        printf("#");
+
+    for(i = 0; i < SIZE-percentage_complete; i++)
+        printf("_");
+    printf("|");
+    fflush(stdout);
+
+}
+
+
+void delete_bar(int length){
+    // plus 2 for the | at the start and the end.
+    // length is the number of digits the number has.
+    for (long i = 0; i < SIZE + 5 + length; i++)
+        printf("\b");
+}
+
+
+void bar(long num, int length, long completed, long total){
+    long percentage_complete = (completed * SIZE/total);
+    if (percentage_complete >= 9){
+        percentage_complete = 9;
+    }
+
+    delete_bar(length);
+    display_bar(num, percentage_complete);
+}
+
+
+int get_length(long num){
+    int length = 0;
+
+    do{
+        length++;
+        num/=10;
+    }while(num > 0);
+
+    return length;
+}
+
