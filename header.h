@@ -12,19 +12,6 @@
 #include <unistd.h>
 #include <pthread.h>
 
-//client functions
-int format_input(char *user_input, long *num_p);
-void *listen(void *arg);
-
-
-
-
-//server functions
-long bit_rotate_right(long num, unsigned int rotations);
-void *find_factors(void *arg);
-void delay(int milli);
-void *solve(void* num);
-int slot_request(int server_flag[]);
 
 #define EMPTY 0
 #define CLOSE -1
@@ -44,7 +31,19 @@ struct Memory{
 };
 
 
+//client functions
+int format_input(char *user_input, long *num_p);
+void *listen(void *arg);
 
+
+
+
+//server functions
+long bit_rotate_right(long num, unsigned int rotations);
+void *find_factors(void *arg);
+void delay(int milli);
+void *solve(void* arg);
+int slot_request(int server_flag[]);
 
 
 #endif //ASSESSMENT2_HEADER_H

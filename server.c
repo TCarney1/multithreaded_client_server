@@ -55,6 +55,7 @@ int main() {
             // if we arent full, make threads for client request.
             if(shm_ptr->current_slot >= 0) {
                 // for each request
+
                 // create 32 threads to solve simultaneously
                 pthread_create(&tid[shm_ptr->current_slot], NULL, solve, (void *) shm_ptr);
                 shm_ptr->number = shm_ptr->current_slot; // tell client index of next avail slot. (-1 if full)
