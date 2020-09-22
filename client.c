@@ -89,7 +89,6 @@ int main() {
             if(shm_ptr->number >= 0){ // -1 is returned if full)
                 local_slots[shm_ptr->number] = num;
                 // create a thread for listening for factors.
-                printf("slot: %ld\n", shm_ptr->number);
                 pthread_create(&tid[shm_ptr->number], NULL, listen, (void *) shm_ptr);
                 printf("--- request successful: Num: %ld Slot: %ld ---\n", num, shm_ptr->number);
             } else {
@@ -103,6 +102,8 @@ int main() {
 
 
 void *listen(void *arg){
+    struct Node *head = NULL;
+    head = (struct Node*)malloc(sizeof(struct Node));
     struct timespec start, end;
     long time_taken;
 
@@ -111,14 +112,29 @@ void *listen(void *arg){
     struct Memory* m = (struct Memory*) arg;
     long slot_num = m->number;
     while(m->server_flag[slot_num] != CLOSE){
+        // wait for server to give us a factor.
         while(m->server_flag[slot_num] == EMPTY)
             ;
+        // server has given us a factor
         if(m->server_flag[slot_num] == NEW_DATA){
+            // add factors to list of factors.
+            if(head != NULL){
+                push_front(&head, m->slot[slot_num]);
+            } else {
+                head->factor = m->slot[slot_num];
+            }
             //printf("Request: %ld -- Factor: %ld\n", local_slots[slot_num], m->slot[slot_num]);
             m->server_flag[slot_num] = EMPTY;
         }
     }
+    // stop timing server
     clock_gettime(CLOCK_MONOTONIC, &end);
+
+    // print output
+    print_list(head);
+    delete(head);
+
+    // calc time taken
     time_taken = (end.tv_sec - start.tv_sec);
     time_taken += (end.tv_nsec - start.tv_nsec) / 1000000000;
     printf("Time elapsed for number \"%ld\": %ld seconds.\n",local_slots[slot_num], time_taken);
@@ -141,4 +157,32 @@ int format_input(char *user_input, long *num_p){
     if(token != NULL || *num_p == 0) return 1;
 
     return 0;
+}
+
+
+void print_list(struct Node* node){
+    printf("--- Displaying Factors ---\n\n");
+    while (node != NULL) {
+        printf("%ld ", node->factor);
+        node = node->next;
+    }
+    printf("\n\n");
+}
+
+
+void push_front(struct Node **head, long factor){
+    struct Node *node = (struct Node *)malloc(sizeof(struct Node));
+    node->factor = factor;
+    node->next = *head;
+    *head = node;
+}
+
+void delete(struct Node *head){
+    struct Node* temp;
+
+    while(head != NULL){
+        temp = head;
+        head = head->next;
+        free(temp);
+    }
 }

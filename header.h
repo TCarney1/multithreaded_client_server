@@ -30,10 +30,18 @@ struct Memory{
     int index, current_slot;
 };
 
+struct Node{
+    long factor;
+    struct Node* next;
+};
+
 
 //client functions
 int format_input(char *user_input, long *num_p);
 void *listen(void *arg);
+void print_list(struct Node* n);
+void push_front(struct Node ** head, long factor);
+void delete(struct Node *head);
 
 
 

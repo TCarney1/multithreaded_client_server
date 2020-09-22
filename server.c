@@ -82,7 +82,6 @@ int slot_request(int server_flag[]){
     return -1;
 }
 
-pthread_t tid[NUM_THREADS * NUM_REQUESTS];
 // main driving function for solution.
 // creates 32 threads.
 // each thread finds all the factors for a different number.
@@ -91,17 +90,18 @@ void *solve(void* arg){
     int slot_num = m->current_slot;
     long loc = m->slot[m->current_slot];
 
+    pthread_t tid[NUM_THREADS];
     printf("Started: %ld\n", loc);
     // num threads is just for 1 request.
     // so overall threads is NUM_THREADS * requests.
     // This just starts 32 threads, 1 for each bit rotated num.
     for(int i = 0; i < NUM_THREADS; i++){
         m->index = i;
-        pthread_create(&tid[i + (slot_num * NUM_THREADS)], NULL, find_factors, (void *) m);
+        pthread_create(&tid[i], NULL, find_factors, (void *) m);
         delay(30);
     }
     for(int i = 0; i < NUM_THREADS; i++){
-        pthread_join(tid[i + (slot_num * NUM_THREADS)], NULL);
+        pthread_join(tid[i], NULL);
     }
     // we are finished with the slot.
     m->server_flag[slot_num] = CLOSE; // set slot flag to CLOSE so it can be reused.
@@ -160,4 +160,7 @@ void delay(int milli){
     while( (now-then) < pause )
         now = clock();
 }
+
+
+
 
