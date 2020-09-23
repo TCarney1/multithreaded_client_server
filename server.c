@@ -51,6 +51,7 @@ int main() {
 
             shm_ptr->current_slot = slot_request(shm_ptr->server_flag); // get index of next avail slot
             shm_ptr->original_num[shm_ptr->current_slot] = shm_ptr->number; // keep track of original number
+            shm_ptr->threads_finished[shm_ptr->current_slot] = 0;
 
             // if we arent full, make threads for client request.
             if(shm_ptr->current_slot >= 0) {
@@ -129,6 +130,7 @@ void *find_factors(void *arg){
             printf("OG: %ld Num: %ld -- Factor: %ld\n", original, num, i);
         }
     }
+    m->threads_finished[slot_num]++;
     return (void*) 0;
 }
 

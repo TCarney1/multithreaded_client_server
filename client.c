@@ -108,7 +108,6 @@ void *listen(void *arg){
     long time_taken;
 
     clock_gettime( CLOCK_MONOTONIC, &start);
-    int count = 0;
 
     while(m->server_flag[slot_num] != CLOSE){
         // wait for server to give us a factor.
@@ -122,15 +121,16 @@ void *listen(void *arg){
             } else {
                 head->factor = m->slot[slot_num];
             }
-            count++;
-            bar(original_number, length, count, 300);
+            bar(original_number, length, m->threads_finished[slot_num], NUM_THREADS);
             //printf("Request: %ld -- Factor: %ld\n", original_number, m->slot[slot_num]);
             m->server_flag[slot_num] = EMPTY;
         }
     }
     // stop timing server
     clock_gettime(CLOCK_MONOTONIC, &end);
-
+    // print finished loading bar.
+    bar(original_number, length, m->threads_finished[slot_num], NUM_THREADS);
+    printf("\n");
     // print output
     print_list(head);
     delete(head);
@@ -191,7 +191,7 @@ void delete(struct Node *head){
 
 void display_bar(long num, long percentage_complete){
     long i;
-    printf("%ld : |", num);
+    printf("%ld : %ld%% |", num,percentage_complete * 10);
     for(i = 0; i < percentage_complete; i++)
         printf("#");
 
@@ -205,19 +205,17 @@ void display_bar(long num, long percentage_complete){
 
 void delete_bar(int length){
     // plus 2 for the | at the start and the end.
-    // length is the number of digits the number has.
-    for (long i = 0; i < SIZE + 5 + length; i++)
+    // length is the number of digits the numbers have.
+    for (long i = 0; i < SIZE + 7 + length; i++)
         printf("\b");
 }
 
 
+// loading bar displays percentage of threads finished.
 void bar(long num, int length, long completed, long total){
     long percentage_complete = (completed * SIZE/total);
-    if (percentage_complete >= 9){
-        percentage_complete = 9;
-    }
-
-    delete_bar(length);
+    int length_2 = get_length(percentage_complete * 10);
+    delete_bar(length + length_2);
     display_bar(num, percentage_complete);
 }
 
