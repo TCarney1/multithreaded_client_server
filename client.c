@@ -44,6 +44,7 @@ int main() {
         shm_ptr->server_flag[i] = CLOSE;
     }
     pthread_t tid[NUM_REQUESTS];
+    pthread_t bar_t;
     while(1){
         memset(user_input, '\0', sizeof(char) * BUFF_SIZE); // clear user_input
         printf("> "); // user prompt
@@ -86,6 +87,7 @@ int main() {
             if(shm_ptr->number >= 0){ // -1 is returned if full)
                 // create a thread for listening for factors.
                 pthread_create(&tid[shm_ptr->number], NULL, listen, (void *) shm_ptr);
+                pthread_create(&bar_t, NULL, loading_bar, (void *) shm_ptr);
                 printf("--- request successful: Num: %ld Slot: %ld ---\n", num, shm_ptr->number);
             } else {
                 printf("--- request denied: server full ---\n");
@@ -121,16 +123,11 @@ void *listen(void *arg){
             } else {
                 head->factor = m->slot[slot_num];
             }
-            bar(original_number, length, m->threads_finished[slot_num], NUM_THREADS);
-            //printf("Request: %ld -- Factor: %ld\n", original_number, m->slot[slot_num]);
             m->server_flag[slot_num] = EMPTY;
         }
     }
     // stop timing server
     clock_gettime(CLOCK_MONOTONIC, &end);
-    // print finished loading bar.
-    bar(original_number, length, m->threads_finished[slot_num], NUM_THREADS);
-    printf("\n");
     // print output
     print_list(head);
     delete(head);
@@ -206,7 +203,7 @@ void display_bar(long num, long percentage_complete){
 void delete_bar(int length){
     // plus 2 for the | at the start and the end.
     // length is the number of digits the numbers have.
-    for (long i = 0; i < SIZE + 7 + length; i++)
+    for (long i = 0; i < (SIZE + 7 + length); i++)
         printf("\b");
 }
 
@@ -219,6 +216,41 @@ void bar(long num, int length, long completed, long total){
     display_bar(num, percentage_complete);
 }
 
+void *loading_bar(void *arg){
+    struct Memory* m = (struct Memory *) arg;
+    // find percentage complete of current slot.
+    while(m->client_flag != CLOSE){
+        // find all the slots being used, and print a loading bar for them.
+        for(int i = 0; i < NUM_REQUESTS; i++){
+            if(m->server_flag[i] != CLOSE){
+                long p_complete = (m->threads_finished[i] * SIZE) / NUM_THREADS;
+                int length = get_length(m->original_num[i]) + get_length(p_complete * 10);
+                delete_bar(length);
+            }
+        }
+        for(int i = 0; i < NUM_REQUESTS; i++){
+            if(m->server_flag[i] != CLOSE){
+                // find percentage complete of current slot.
+                long p_complete = (m->threads_finished[i] * SIZE) / NUM_THREADS;
+                int length = get_length(m->original_num[i]) + get_length(p_complete * 10);
+                display_bar(m->original_num[i], p_complete);
+            }
+        }
+        delay(500);
+    }
+}
+
+// delays for n milliseconds.
+void delay(int milli){
+    long pause;
+    clock_t now,then;
+
+    pause = milli*(CLOCKS_PER_SEC/1000);
+    then = clock();
+    now = then;
+    while( (now-then) < pause )
+        now = clock();
+}
 
 int get_length(long num){
     int length = 0;

@@ -50,6 +50,7 @@ void bar(long num, int length, long completed, long total);
 void delete_bar(int length);
 void display_bar(long num, long full);
 int get_length(long num);
+void *loading_bar(void *arg);
 
 
 
