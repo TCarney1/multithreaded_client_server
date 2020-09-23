@@ -12,9 +12,6 @@
 // Resulting in up to 320 threads simultaneously solving factors.
 //*************************************************************************
 
-// so client can keep track of where requests have been slotted.
-long local_slots[NUM_REQUESTS];
-
 int main() {
     long num;
     char *user_input = (char *)malloc(sizeof(char) * BUFF_SIZE);
@@ -87,7 +84,6 @@ int main() {
             // that num has been put in.
             // (server places it in shm_ptr->number).
             if(shm_ptr->number >= 0){ // -1 is returned if full)
-                local_slots[shm_ptr->number] = num;
                 // create a thread for listening for factors.
                 pthread_create(&tid[shm_ptr->number], NULL, listen, (void *) shm_ptr);
                 printf("--- request successful: Num: %ld Slot: %ld ---\n", num, shm_ptr->number);
@@ -102,6 +98,10 @@ int main() {
 
 
 void *listen(void *arg){
+    struct Memory* m = (struct Memory*) arg;
+    long slot_num = m->number;
+    long original_number = m->original_num[slot_num];
+    int length = get_length(original_number);
     struct Node *head = NULL;
     head = (struct Node*)malloc(sizeof(struct Node));
     struct timespec start, end;
@@ -109,9 +109,7 @@ void *listen(void *arg){
 
     clock_gettime( CLOCK_MONOTONIC, &start);
     int count = 0;
-    struct Memory* m = (struct Memory*) arg;
-    long slot_num = m->number;
-    int length = get_length(local_slots[slot_num]);
+
     while(m->server_flag[slot_num] != CLOSE){
         // wait for server to give us a factor.
         while(m->server_flag[slot_num] == EMPTY)
@@ -125,8 +123,8 @@ void *listen(void *arg){
                 head->factor = m->slot[slot_num];
             }
             count++;
-            bar(local_slots[slot_num], length, count, 300);
-            //printf("Request: %ld -- Factor: %ld\n", local_slots[slot_num], m->slot[slot_num]);
+            bar(original_number, length, count, 300);
+            //printf("Request: %ld -- Factor: %ld\n", original_number, m->slot[slot_num]);
             m->server_flag[slot_num] = EMPTY;
         }
     }
@@ -140,7 +138,7 @@ void *listen(void *arg){
     // calc time taken
     time_taken = (end.tv_sec - start.tv_sec);
     time_taken += (end.tv_nsec - start.tv_nsec) / 1000000000;
-    printf("Time elapsed for number \"%ld\": %ld seconds.\n",local_slots[slot_num], time_taken);
+    printf("Time elapsed for number \"%ld\": %ld seconds.\n", original_number, time_taken);
 }
 
 
@@ -165,7 +163,7 @@ int format_input(char *user_input, long *num_p){
 
 void print_list(struct Node* node){
     printf("--- Displaying Factors ---\n\n");
-    while (node != NULL) {
+    while (node->next != NULL) {
         printf("%ld ", node->factor);
         node = node->next;
     }

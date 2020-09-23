@@ -29,6 +29,8 @@ struct Memory{
     long slot[NUM_REQUESTS]; // slots for responses.
     int client_flag; // flag for new number
     int server_flag[NUM_REQUESTS]; // flags for response slots.
+    long original_num[NUM_REQUESTS];
+    int threads_finished[NUM_REQUESTS];
     int index, current_slot;
 };
 

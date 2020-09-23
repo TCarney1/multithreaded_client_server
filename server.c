@@ -50,22 +50,19 @@ int main() {
         if(shm_ptr->client_flag == NEW_DATA) {
 
             shm_ptr->current_slot = slot_request(shm_ptr->server_flag); // get index of next avail slot
-            shm_ptr->slot[shm_ptr->current_slot] = shm_ptr->number; // put number in slot
+            shm_ptr->original_num[shm_ptr->current_slot] = shm_ptr->number; // keep track of original number
 
             // if we arent full, make threads for client request.
             if(shm_ptr->current_slot >= 0) {
                 // for each request
-
                 // create 32 threads to solve simultaneously
                 pthread_create(&tid[shm_ptr->current_slot], NULL, solve, (void *) shm_ptr);
-                shm_ptr->number = shm_ptr->current_slot; // tell client index of next avail slot. (-1 if full)
-                // tell client they can replace the number.
-                shm_ptr->client_flag = EMPTY;
             } else {
                 printf("--- cannot add request: server full ---\n");
-                shm_ptr->client_flag = EMPTY;
-                shm_ptr->number = shm_ptr->current_slot; // tell client index of next avail slot. (-1 if full)
             }
+            shm_ptr->number = shm_ptr->current_slot; // tell client index of next avail slot. (-1 if full)
+            // tell client they can replace the number.
+            shm_ptr->client_flag = EMPTY;
         }
     }
 }
@@ -88,7 +85,7 @@ int slot_request(int server_flag[]){
 void *solve(void* arg){
     struct Memory *m = (struct Memory *) arg;
     int slot_num = m->current_slot;
-    long loc = m->slot[m->current_slot];
+    long loc = m->original_num[slot_num];
 
     pthread_t tid[NUM_THREADS];
     printf("Started: %ld\n", loc);
@@ -115,14 +112,14 @@ void *solve(void* arg){
 void *find_factors(void *arg){
     struct Memory *m = (struct Memory*) arg;
     int slot_num = m->current_slot;
-    long num = m->slot[slot_num];
+    long num = m->original_num[slot_num];
     int rotations = m->index;
     long original = num;
     // bit rotates num by its index.
     num = bit_rotate_right(num, rotations);
     //printf("Num: %ld\n", num);
     //printf("index: %d\n", rotations);
-    delay(100 * NUM_THREADS); // delay all threads until all threads have started.
+    //delay(100 * NUM_THREADS); // delay all threads until all threads have started.
     for(long i = 1; i <= num; i++){
         if(num % i == 0){
             while (m->server_flag[slot_num] != EMPTY)
