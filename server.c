@@ -89,7 +89,7 @@ void *solve(void* arg){
     long loc = m->original_num[slot_num];
 
     pthread_t tid[NUM_THREADS];
-    printf("Started: %ld\n", loc);
+    printf("Started: %ld Slot: %d\n", loc, slot_num);
     // num threads is just for 1 request.
     // so overall threads is NUM_THREADS * requests.
     // This just starts 32 threads, 1 for each bit rotated num.
@@ -127,7 +127,7 @@ void *find_factors(void *arg){
                 ;
             m->slot[slot_num] = i;
             m->server_flag[slot_num] = NEW_DATA;
-            printf("OG: %ld Num: %ld -- Factor: %ld\n", original, num, i);
+           // printf("OG: %ld Num: %ld -- Factor: %ld\n", original, num, i);
         }
     }
     m->threads_finished[slot_num]++;

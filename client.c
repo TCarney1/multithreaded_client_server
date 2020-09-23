@@ -61,7 +61,7 @@ int main() {
         }
 
         if(format_input(user_input, &num) == 0){
-            printf("--- requesting from server ---\n");
+            //printf("--- requesting from server ---\n");
 
             // ensure server has taken data.
             // (shouldn't really even enter this loop.)
@@ -75,7 +75,7 @@ int main() {
             // and change flag to tell server
             shm_ptr->number = num;
             shm_ptr->client_flag = NEW_DATA;
-            printf("--- request sent ---\n");
+            //printf("--- request sent ---\n");
 
             // wait for server to acknowledge
             while(shm_ptr->client_flag != EMPTY)
@@ -87,8 +87,8 @@ int main() {
             if(shm_ptr->number >= 0){ // -1 is returned if full)
                 // create a thread for listening for factors.
                 pthread_create(&tid[shm_ptr->number], NULL, listen, (void *) shm_ptr);
+                //printf("--- request successful: Num: %ld Slot: %ld ---\n", num, shm_ptr->number);
                 pthread_create(&bar_t, NULL, loading_bar, (void *) shm_ptr);
-                printf("--- request successful: Num: %ld Slot: %ld ---\n", num, shm_ptr->number);
             } else {
                 printf("--- request denied: server full ---\n");
             }
@@ -194,7 +194,7 @@ void display_bar(long num, long percentage_complete){
 
     for(i = 0; i < SIZE-percentage_complete; i++)
         printf("_");
-    printf("|");
+    printf("| ");
     fflush(stdout);
 
 }
@@ -203,17 +203,8 @@ void display_bar(long num, long percentage_complete){
 void delete_bar(int length){
     // plus 2 for the | at the start and the end.
     // length is the number of digits the numbers have.
-    for (long i = 0; i < (SIZE + 7 + length); i++)
+    for (long i = 0; i < (SIZE + length + 32); i++)
         printf("\b");
-}
-
-
-// loading bar displays percentage of threads finished.
-void bar(long num, int length, long completed, long total){
-    long percentage_complete = (completed * SIZE/total);
-    int length_2 = get_length(percentage_complete * 10);
-    delete_bar(length + length_2);
-    display_bar(num, percentage_complete);
 }
 
 void *loading_bar(void *arg){
@@ -232,13 +223,13 @@ void *loading_bar(void *arg){
             if(m->server_flag[i] != CLOSE){
                 // find percentage complete of current slot.
                 long p_complete = (m->threads_finished[i] * SIZE) / NUM_THREADS;
-                int length = get_length(m->original_num[i]) + get_length(p_complete * 10);
                 display_bar(m->original_num[i], p_complete);
             }
         }
         delay(500);
     }
 }
+
 
 // delays for n milliseconds.
 void delay(int milli){
@@ -263,3 +254,13 @@ int get_length(long num){
     return length;
 }
 
+int kbhit(void){
+    struct timeval tv;
+    fd_set fds;
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+    FD_ZERO(&fds);
+    FD_SET(STDIN_FILENO, &fds);
+    select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+    return FD_ISSET(STDIN_FILENO, &fds);
+}

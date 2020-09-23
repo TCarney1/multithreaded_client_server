@@ -12,6 +12,9 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <limits.h>
+#include <sys/time.h>
+#include <stdio.h>
+#include <termios.h>
 
 
 #define EMPTY 0
@@ -51,6 +54,7 @@ void delete_bar(int length);
 void display_bar(long num, long full);
 int get_length(long num);
 void *loading_bar(void *arg);
+int kbhit(void);
 
 
 
