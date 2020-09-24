@@ -106,6 +106,7 @@ void *listen(void *arg){
     int length = get_length(original_number);
     struct Node *head = NULL;
     head = (struct Node*)malloc(sizeof(struct Node));
+    head->next = NULL;
     struct timespec start, end;
     long time_taken;
 
@@ -254,13 +255,3 @@ int get_length(long num){
     return length;
 }
 
-int kbhit(void){
-    struct timeval tv;
-    fd_set fds;
-    tv.tv_sec = 0;
-    tv.tv_usec = 0;
-    FD_ZERO(&fds);
-    FD_SET(STDIN_FILENO, &fds);
-    select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
-    return FD_ISSET(STDIN_FILENO, &fds);
-}
