@@ -110,6 +110,8 @@ void *listen(void *arg){
     struct timespec start, end;
     long time_taken;
 
+    int count = 0;
+
     clock_gettime( CLOCK_MONOTONIC, &start);
 
     while(m->server_flag[slot_num] != CLOSE){
@@ -119,6 +121,7 @@ void *listen(void *arg){
         // server has given us a factor
         if(m->server_flag[slot_num] == NEW_DATA){
             // add factors to list of factors.
+            count++;
             if(head != NULL){
                 push_front(&head, m->slot[slot_num]);
             } else {
@@ -127,12 +130,14 @@ void *listen(void *arg){
             m->server_flag[slot_num] = EMPTY;
         }
     }
+
     // stop timing server
     clock_gettime(CLOCK_MONOTONIC, &end);
     // print output
     print_list(head);
     delete(head);
 
+    printf("Num Factors: %d\n", count);
     // calc time taken
     time_taken = (end.tv_sec - start.tv_sec);
     time_taken += (end.tv_nsec - start.tv_nsec) / 1000000000;

@@ -79,7 +79,7 @@ int slot_request(int server_flag[]){
     }
     return -1;
 }
-
+int gl_count = 0;
 // main driving function for solution.
 // creates 32 threads.
 // each thread finds all the factors for a different number.
@@ -101,11 +101,11 @@ void *solve(void* arg){
     for(int i = 0; i < NUM_THREADS; i++){
         pthread_join(tid[i], NULL);
     }
+    printf("Num Factors: %d\n", gl_count);
     // we are finished with the slot.
     m->server_flag[slot_num] = CLOSE; // set slot flag to CLOSE so it can be reused.
     printf("Finished: %ld\n", loc);
 }
-
 
 // each thread executes this function.
 // finds all the factors of its number and then sends/waits
@@ -115,7 +115,9 @@ void *find_factors(void *arg){
     int slot_num = m->current_slot;
     long num = m->original_num[slot_num];
     int rotations = m->index;
-    long original = num;
+
+    int count = 0;
+
     // bit rotates num by its index.
     num = bit_rotate_right(num, rotations);
     //printf("Num: %ld\n", num);
@@ -123,6 +125,7 @@ void *find_factors(void *arg){
     //delay(100 * NUM_THREADS); // delay all threads until all threads have started.
     for(long i = 1; i <= num; i++){
         if(num % i == 0){
+            count++;
             while (m->server_flag[slot_num] != EMPTY)
                 ;
             m->slot[slot_num] = i;
@@ -130,6 +133,7 @@ void *find_factors(void *arg){
            // printf("OG: %ld Num: %ld -- Factor: %ld\n", original, num, i);
         }
     }
+    gl_count += count;
     m->threads_finished[slot_num]++;
     return (void*) 0;
 }
