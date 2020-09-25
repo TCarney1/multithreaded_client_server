@@ -127,13 +127,13 @@ void *listen(void *arg){
         }
         // add factors to list of factors.
         count++;
-        //sem_wait(mutex);
+        sem_wait(mutex);
         if(head != NULL){
             push_front(&head, m->slot[slot_num]);
         } else {
             head->factor = m->slot[slot_num];
         }
-        //sem_post(mutex);
+        sem_post(mutex);
         sem_post(taken);
     }
 
@@ -223,8 +223,8 @@ void display_bar(long num, long percentage_complete){
 void delete_bar(int length){
     // plus 2 for the | at the start and the end.
     // length is the number of digits the numbers have.
-    for (long i = 0; i < (SIZE + length + 32); i++)
-        printf("\b");
+    for (long i = 0; i < 350; i++)
+        printf("\b\b\b\b\b\b\b\b\b\b");
 }
 
 void *loading_bar(void *arg){

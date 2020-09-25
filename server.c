@@ -100,7 +100,7 @@ void *solve(void* arg){
         pthread_create(&tid[i], NULL, find_factors, (void *) m);
         delay(30);
     }
-    for(int i = 0; i < NUM_THREADS - 1; i++){
+    for(int i = 0; i < NUM_THREADS; i++){
         pthread_join(tid[i], NULL);
     }
     // we are finished with the slot.
