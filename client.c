@@ -60,7 +60,7 @@ int main() {
             exit(EXIT_SUCCESS);
         }
 
-        if(format_input(user_input, &num) == 0 && num < LONG_MAX){
+        if(format_input(user_input, &num) == 0){
             //printf("--- requesting from server ---\n");
 
             // ensure server has taken data.
@@ -109,43 +109,24 @@ void *listen(void *arg){
     head->next = NULL;
     struct timespec start, end;
     long time_taken;
-    sem_t *taken, *full, *mutex;
-    mutex = sem_open("mutex", O_CREAT, 0666, 1);
-    taken = sem_open("taken", O_CREAT, 0666, 1);
-    full = sem_open("full", O_CREAT, 0666, 1);
-
-    int count = 0;
 
     clock_gettime( CLOCK_MONOTONIC, &start);
 
-    while(m->threads_finished[slot_num] < NUM_THREADS){
-
-        sem_wait(full);
-
-        if(m->threads_finished[slot_num] >= NUM_THREADS){
-            break; // this stops some deadlocks (in combination with server call)
+    while(m->server_flag[slot_num] != CLOSE){
+        // wait for server to give us a factor.
+        while(m->server_flag[slot_num] == EMPTY)
+            ;
+        // server has given us a factor
+        if(m->server_flag[slot_num] == NEW_DATA){
+            // add factors to list of factors.
+            if(head != NULL){
+                push_front(&head, m->slot[slot_num]);
+            } else {
+                head->factor = m->slot[slot_num];
+            }
+            m->server_flag[slot_num] = EMPTY;
         }
-        // add factors to list of factors.
-        count++;
-        sem_wait(mutex);
-        if(head != NULL){
-            push_front(&head, m->slot[slot_num]);
-        } else {
-            head->factor = m->slot[slot_num];
-        }
-        sem_post(mutex);
-        sem_post(taken);
     }
-
-    sem_post(mutex);
-    sem_post(taken);
-
-    sem_close(taken);
-    sem_close(full);
-    sem_close(mutex);
-    sem_unlink("mutex");
-    sem_unlink("taken");
-    sem_unlink("full");
     // stop timing server
     clock_gettime(CLOCK_MONOTONIC, &end);
     // print output
@@ -171,13 +152,14 @@ int format_input(char *user_input, long *num_p){
 
     token = strtok(NULL, " ");
 
-    // too many args given or arg was not a number.
-    if(token != NULL || *num_p == 0) return 1;
+    // too many args given or arg was not a number, or num is too big.
+    if(token != NULL || *num_p == 0 || *num_p == LONG_MAX) return 1;
 
     return 0;
 }
 
 
+// prints all the factors that where stored in the linked list.
 void print_list(struct Node* node){
     printf("--- Displaying Factors ---\n\n");
     while (node->next != NULL) {
@@ -188,6 +170,7 @@ void print_list(struct Node* node){
 }
 
 
+//adds node to the front of linked list.
 void push_front(struct Node **head, long factor){
     struct Node *node = (struct Node *)malloc(sizeof(struct Node));
     node->factor = factor;
@@ -195,6 +178,8 @@ void push_front(struct Node **head, long factor){
     *head = node;
 }
 
+
+// deallocates memory for linked list
 void delete(struct Node *head){
     struct Node* temp;
 
@@ -206,6 +191,7 @@ void delete(struct Node *head){
 }
 
 
+// responsible for displaying the loading bar.
 void display_bar(long num, long percentage_complete){
     long i;
     printf("%ld : %ld%% |", num,percentage_complete * 10);
@@ -220,11 +206,12 @@ void display_bar(long num, long percentage_complete){
 }
 
 
+// deletes the bar for updating
 void delete_bar(int length){
     // plus 2 for the | at the start and the end.
     // length is the number of digits the numbers have.
-    for (long i = 0; i < 350; i++)
-        printf("\b\b\b\b\b\b\b\b\b\b");
+    for (long i = 0; i < (SIZE + length + 32); i++)
+        printf("\b");
 }
 
 void *loading_bar(void *arg){
