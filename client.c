@@ -60,7 +60,7 @@ int main() {
             exit(EXIT_SUCCESS);
         }
 
-        if(format_input(user_input, &num) == 0){
+        if(format_input(user_input, &num) == 0 && num < LONG_MAX){
             //printf("--- requesting from server ---\n");
 
             // ensure server has taken data.
@@ -109,35 +109,49 @@ void *listen(void *arg){
     head->next = NULL;
     struct timespec start, end;
     long time_taken;
+    sem_t *taken, *full, *mutex;
+    mutex = sem_open("mutex", O_CREAT, 0666, 1);
+    taken = sem_open("taken", O_CREAT, 0666, 1);
+    full = sem_open("full", O_CREAT, 0666, 1);
 
     int count = 0;
 
     clock_gettime( CLOCK_MONOTONIC, &start);
 
-    while(m->server_flag[slot_num] != CLOSE){
-        // wait for server to give us a factor.
-        while(m->server_flag[slot_num] == EMPTY)
-            ;
-        // server has given us a factor
-        if(m->server_flag[slot_num] == NEW_DATA){
-            // add factors to list of factors.
-            count++;
-            if(head != NULL){
-                push_front(&head, m->slot[slot_num]);
-            } else {
-                head->factor = m->slot[slot_num];
-            }
-            m->server_flag[slot_num] = EMPTY;
+    while(m->threads_finished[slot_num] < NUM_THREADS){
+
+        sem_wait(full);
+
+        if(m->threads_finished[slot_num] >= NUM_THREADS){
+            break; // this stops some deadlocks (in combination with server call)
         }
+        // add factors to list of factors.
+        count++;
+        //sem_wait(mutex);
+        if(head != NULL){
+            push_front(&head, m->slot[slot_num]);
+        } else {
+            head->factor = m->slot[slot_num];
+        }
+        //sem_post(mutex);
+        sem_post(taken);
     }
 
+    sem_post(mutex);
+    sem_post(taken);
+
+    sem_close(taken);
+    sem_close(full);
+    sem_close(mutex);
+    sem_unlink("mutex");
+    sem_unlink("taken");
+    sem_unlink("full");
     // stop timing server
     clock_gettime(CLOCK_MONOTONIC, &end);
     // print output
     print_list(head);
     delete(head);
 
-    printf("Num Factors: %d\n", count);
     // calc time taken
     time_taken = (end.tv_sec - start.tv_sec);
     time_taken += (end.tv_nsec - start.tv_nsec) / 1000000000;

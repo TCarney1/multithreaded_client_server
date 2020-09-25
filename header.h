@@ -15,6 +15,9 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <termios.h>
+#include <semaphore.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 
 #define EMPTY 0

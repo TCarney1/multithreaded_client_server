@@ -61,7 +61,8 @@ int main() {
             } else {
                 printf("--- cannot add request: server full ---\n");
             }
-            shm_ptr->number = shm_ptr->current_slot; // tell client index of next avail slot. (-1 if full)
+            // tell client index of next avail slot. (-1 if full)
+            shm_ptr->number = shm_ptr->current_slot;
             // tell client they can replace the number.
             shm_ptr->client_flag = EMPTY;
         }
@@ -79,7 +80,8 @@ int slot_request(int server_flag[]){
     }
     return -1;
 }
-int gl_count = 0;
+
+
 // main driving function for solution.
 // creates 32 threads.
 // each thread finds all the factors for a different number.
@@ -94,14 +96,13 @@ void *solve(void* arg){
     // so overall threads is NUM_THREADS * requests.
     // This just starts 32 threads, 1 for each bit rotated num.
     for(int i = 0; i < NUM_THREADS; i++){
-        m->index = i;
+        m->index = i; // index is how many bit rotations a thread needs to do to its number.
         pthread_create(&tid[i], NULL, find_factors, (void *) m);
         delay(30);
     }
-    for(int i = 0; i < NUM_THREADS; i++){
+    for(int i = 0; i < NUM_THREADS - 1; i++){
         pthread_join(tid[i], NULL);
     }
-    printf("Num Factors: %d\n", gl_count);
     // we are finished with the slot.
     m->server_flag[slot_num] = CLOSE; // set slot flag to CLOSE so it can be reused.
     printf("Finished: %ld\n", loc);
@@ -115,26 +116,33 @@ void *find_factors(void *arg){
     int slot_num = m->current_slot;
     long num = m->original_num[slot_num];
     int rotations = m->index;
-
-    int count = 0;
+    sem_t *taken, *full, *mutex;
+    taken = sem_open("taken", O_CREAT, 0666, 1);
+    full = sem_open("full", O_CREAT, 0666, 1);
+    mutex = sem_open("mutex", O_CREAT, 0666, 1);
 
     // bit rotates num by its index.
     num = bit_rotate_right(num, rotations);
-    //printf("Num: %ld\n", num);
-    //printf("index: %d\n", rotations);
-    //delay(100 * NUM_THREADS); // delay all threads until all threads have started.
-    for(long i = 1; i <= num; i++){
-        if(num % i == 0){
-            count++;
-            while (m->server_flag[slot_num] != EMPTY)
-                ;
+
+    for(long i = 1; i <= num; i++) {
+        if (num % i == 0) {
+            sem_wait(taken);
+            sem_wait(mutex);
             m->slot[slot_num] = i;
-            m->server_flag[slot_num] = NEW_DATA;
-           // printf("OG: %ld Num: %ld -- Factor: %ld\n", original, num, i);
+            sem_post(mutex);
+            sem_post(full);
         }
     }
-    gl_count += count;
     m->threads_finished[slot_num]++;
+    sem_post(full); // this stops some deadlocks
+    sleep(1);
+    sem_close(taken);
+    sem_close(full);
+    sem_close(mutex);
+    sem_unlink("mutex");
+    sem_unlink("taken");
+    sem_unlink("full");
+
     return (void*) 0;
 }
 
