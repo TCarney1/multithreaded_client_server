@@ -68,6 +68,7 @@ int main() {
                 // for each request
                 // create 32 threads to solve simultaneously
                 pthread_create(&tid[shm_ptr->current_slot], NULL, solve, (void *) shm_ptr);
+                printf("Started: %ld\n", shm_ptr->original_num[shm_ptr->current_slot]);
             } else {
                 printf("--- cannot add request: server full ---\n");
             }
