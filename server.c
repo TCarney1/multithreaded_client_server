@@ -12,6 +12,8 @@
 //*************************************************************************
 
 
+int READY_FLAG = EMPTY;
+
 int main() {
     key_t shm_key;
     int shm_id;
@@ -48,10 +50,14 @@ int main() {
         }
         // number entered.
         if(shm_ptr->client_flag == NEW_DATA) {
-
+            // this is to make sure all the previous requests threads have started
+            // before we change the slot number.
+            while(READY_FLAG == NEW_DATA)
+                ;
             shm_ptr->current_slot = slot_request(shm_ptr->server_flag); // get index of next avail slot
             shm_ptr->original_num[shm_ptr->current_slot] = shm_ptr->number; // keep track of original number
             shm_ptr->threads_finished[shm_ptr->current_slot] = 0;
+            READY_FLAG = NEW_DATA;
 
             // if we arent full, make threads for client request.
             if(shm_ptr->current_slot >= 0) {
@@ -85,11 +91,11 @@ int slot_request(int server_flag[]){
 // each thread finds all the factors for a different number.
 void *solve(void* arg){
     struct Memory *m = (struct Memory *) arg;
+
     int slot_num = m->current_slot;
     long loc = m->original_num[slot_num];
 
     pthread_t tid[NUM_THREADS];
-    printf("Started: %ld Slot: %d\n", loc, slot_num);
     // num threads is just for 1 request.
     // so overall threads is NUM_THREADS * requests.
     // This just starts 32 threads, 1 for each bit rotated num.
@@ -98,6 +104,7 @@ void *solve(void* arg){
         pthread_create(&tid[i], NULL, find_factors, (void *) m);
         delay(30);
     }
+    READY_FLAG = EMPTY;
     for(int i = 0; i < NUM_THREADS; i++){
         pthread_join(tid[i], NULL);
     }
@@ -115,7 +122,7 @@ void *find_factors(void *arg){
     int slot_num = m->current_slot;
     long num = m->original_num[slot_num];
     int rotations = m->index;
-    long original = num;
+
     // bit rotates num by its index.
     num = bit_rotate_right(num, rotations);
     //printf("Num: %ld\n", num);
