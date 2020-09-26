@@ -15,6 +15,8 @@
 int READY_FLAG = EMPTY;
 
 int main() {
+
+    //*************** Shared memory **************//
     key_t shm_key;
     int shm_id;
     struct Memory *shm_ptr;
@@ -36,8 +38,10 @@ int main() {
     }
     pthread_t tid[NUM_REQUESTS];
     printf("--- server memory attached ---\n");
+
+    //*************** main loop **************//
     while(1) {
-        // what for client to send data.
+        // wait for client to send data.
         while (shm_ptr->client_flag == EMPTY){
             ;
         }
@@ -56,8 +60,8 @@ int main() {
                 ;
             shm_ptr->current_slot = slot_request(shm_ptr->server_flag); // get index of next avail slot
             shm_ptr->original_num[shm_ptr->current_slot] = shm_ptr->number; // keep track of original number
-            shm_ptr->threads_finished[shm_ptr->current_slot] = 0;
-            READY_FLAG = NEW_DATA;
+            shm_ptr->threads_finished[shm_ptr->current_slot] = 0; // init the number of finished threads to 0.
+            READY_FLAG = NEW_DATA; // critical section started because slot num set.
 
             // if we arent full, make threads for client request.
             if(shm_ptr->current_slot >= 0) {
@@ -104,11 +108,13 @@ void *solve(void* arg){
         pthread_create(&tid[i], NULL, find_factors, (void *) m);
         delay(30);
     }
-    READY_FLAG = EMPTY;
+    READY_FLAG = EMPTY; // we are done with slot num, so let the next thread start.
+
+    // waiting for all threads for this request to finish
     for(int i = 0; i < NUM_THREADS; i++){
         pthread_join(tid[i], NULL);
     }
-    // we are finished with the slot.
+
     m->server_flag[slot_num] = CLOSE; // set slot flag to CLOSE so it can be reused.
     printf("Finished: %ld\n", loc);
 }
@@ -125,16 +131,12 @@ void *find_factors(void *arg){
 
     // bit rotates num by its index.
     num = bit_rotate_right(num, rotations);
-    //printf("Num: %ld\n", num);
-    //printf("index: %d\n", rotations);
-    //delay(100 * NUM_THREADS); // delay all threads until all threads have started.
     for(long i = 1; i <= num; i++){
         if(num % i == 0){
             while (m->server_flag[slot_num] != EMPTY)
                 ;
             m->slot[slot_num] = i;
             m->server_flag[slot_num] = NEW_DATA;
-           // printf("OG: %ld Num: %ld -- Factor: %ld\n", original, num, i);
         }
     }
     m->threads_finished[slot_num]++;

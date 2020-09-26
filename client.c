@@ -13,11 +13,13 @@
 //*************************************************************************
 
 int main() {
+
     long num;
     char *user_input = (char *)malloc(sizeof(char) * BUFF_SIZE);
     printf("Either enter a value and number of threads (\"12345678 4\"), or type quit.\n");
 
-    /// stuff for shared memory ///
+    //*************** Shared memory **************//
+
     key_t shm_key; // shared memory key
     int shm_id; // shared memory id
     struct Memory *shm_ptr; // pointer to shared memory struct.
@@ -45,6 +47,8 @@ int main() {
     }
     pthread_t tid[NUM_REQUESTS];
     pthread_t bar_t;
+
+    //*************** main loop **************//
     while(1){
         memset(user_input, '\0', sizeof(char) * BUFF_SIZE); // clear user_input
         printf("> "); // user prompt
@@ -75,7 +79,6 @@ int main() {
             // and change flag to tell server
             shm_ptr->number = num;
             shm_ptr->client_flag = NEW_DATA;
-            //printf("--- request sent ---\n");
 
             // wait for server to acknowledge
             while(shm_ptr->client_flag != EMPTY)
@@ -87,7 +90,7 @@ int main() {
             if(shm_ptr->number >= 0){ // -1 is returned if full)
                 // create a thread for listening for factors.
                 pthread_create(&tid[shm_ptr->number], NULL, listen, (void *) shm_ptr);
-                //printf("--- request successful: Num: %ld Slot: %ld ---\n", num, shm_ptr->number);
+                // create a thread responsible for displaying the progress of that request.
                 pthread_create(&bar_t, NULL, loading_bar, (void *) shm_ptr);
             } else {
                 printf("--- request denied: server full ---\n");
@@ -103,7 +106,6 @@ void *listen(void *arg){
     struct Memory* m = (struct Memory*) arg;
     long slot_num = m->number;
     long original_number = m->original_num[slot_num];
-    int length = get_length(original_number);
     struct Node *head = NULL;
     head = (struct Node*)malloc(sizeof(struct Node));
     head->next = NULL;
@@ -124,6 +126,7 @@ void *listen(void *arg){
             } else {
                 head->factor = m->slot[slot_num];
             }
+            // tell server we are ready for another number
             m->server_flag[slot_num] = EMPTY;
         }
     }
@@ -131,6 +134,7 @@ void *listen(void *arg){
     clock_gettime(CLOCK_MONOTONIC, &end);
     // print output
     print_list(head);
+    // delete linked list storing factors
     delete(head);
 
     // calc time taken
@@ -147,12 +151,15 @@ int format_input(char *user_input, long *num_p){
 
     //First arg is value.
     token = strtok(user_input, " ");
-    if(token == NULL) return 1; // error, no args
-    *num_p = strtol(token, NULL, 10);
 
+    // error, no args
+    if(token == NULL) return 1;
+
+    // actual number for input
+    *num_p = strtol(token, NULL, 10);
     token = strtok(NULL, " ");
 
-    // too many args given or arg was not a number, or num is too big.
+    // too many args given OR arg was not a number/not valid number OR num is too big.
     if(token != NULL || *num_p == 0 || *num_p == LONG_MAX) return 1;
 
     return 0;
@@ -208,7 +215,7 @@ void display_bar(long num, long percentage_complete){
 
 // deletes the bar for updating
 void delete_bar(int length){
-    // plus 2 for the | at the start and the end.
+    // plus 32 for the misc characters formating the loading bar.
     // length is the number of digits the numbers have.
     for (long i = 0; i < (SIZE + length + 32); i++)
         printf("\b");
